@@ -1,0 +1,33 @@
+# Node / frontend
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+.cache/
+coverage/
+
+# Rust
+/target/
+Cargo.lock
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Databases / runtime
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Archives generated during work
+*.tmp
