@@ -16,6 +16,7 @@ Phase 1: backend design
 - Finalized v1 backend stack decision in ADR form
 - Replaced placeholder API doc with concrete Rust + SQLite v1 backend design
 - Recorded auth, dedupe, endpoint scope, and frontend integration notes for v1
+- Confirmed briefing ownership: another OpenClaw writes briefing content separately
 
 ## Confirmed facts established
 - The source archive contains a Vite + React + TypeScript frontend project.
@@ -42,4 +43,4 @@ Phase 1: backend design
 
 ## Blockers
 - No technical blocker for design
-- Open product decision: whether briefing creation is manual, derived from ingested news, or ingested as a separate artifact in v1
+- No unresolved blocker on briefing ownership; briefing is a separately ingested artifact from another OpenClaw instance

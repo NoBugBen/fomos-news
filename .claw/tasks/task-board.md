@@ -1,7 +1,7 @@
 # Task Board
 
 ## Todo
-- Resolve open product questions around briefing creation flow and admin operations
+- Record upstream OpenClaw handoff details for separate briefing ingest
 - Approve or revise the proposed v1 API contract
 - Approve or revise the proposed auth approach
 - Approve or revise the proposed dedupe strategy

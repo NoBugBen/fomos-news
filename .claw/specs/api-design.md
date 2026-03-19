@@ -344,7 +344,74 @@ Validation rules:
 - `tags` maximum `10`
 - batch size maximum `100`
 
+## Briefing ingestion responsibility
+
+### Confirmed product decision
+- Daily briefing content will be written by another OpenClaw instance as a separate artifact.
+- The backend should not auto-generate briefing content from news items in v1.
+- Integration and handoff docs must make this explicit so the ingesting OpenClaw knows it must submit briefing data separately.
+
+### Integration note for upstream OpenClaw
+The upstream OpenClaw integration must treat `news` and `briefing` as two separate write flows:
+- `news` ingest sends full news items for storage and frontend feed display
+- `briefing` ingest sends the already-structured daily briefing payload for the briefing page
+
+This separation is intentional. The backend is responsible for validation, persistence, and read APIs; the upstream OpenClaw is responsible for briefing composition.
+
 ### 4. Briefing read API
+
+#### `POST /api/ingest/briefings`
+Auth:
+- Required
+- Accept either valid session cookie or ingest bearer token
+
+Purpose:
+- Accept a completed daily briefing payload from another OpenClaw instance.
+
+Request body
+```json
+{
+  "date_key": "2026-03-03",
+  "display_date": "2026年3月3日",
+  "sections": [
+    {
+      "title": "通用 Agent 产品",
+      "emoji": "🌐",
+      "items": [
+        {
+          "id": "brief_item_01",
+          "rank": 1,
+          "title": "Claude Enterprise Agents",
+          "company": "Anthropic",
+          "date": "03-03",
+          "summary": "Anthropic 推出企业 Agent 计划...",
+          "source": "TechCrunch",
+          "source_url": "https://techcrunch.com/...",
+          "stars": 5,
+          "category": "通用 Agent"
+        }
+      ]
+    }
+  ],
+  "analysis": {
+    "trend": "...",
+    "competition": "...",
+    "demand": "..."
+  }
+}
+```
+
+Response `200`
+```json
+{
+  "status": "stored",
+  "date_key": "2026-03-03"
+}
+```
+
+Behavior:
+- Upsert by `date_key` for v1 so the upstream OpenClaw can safely correct the same day's briefing.
+- Replace briefing sections/items atomically for the target `date_key`.
 
 #### `GET /api/briefings/latest`
 Purpose:
