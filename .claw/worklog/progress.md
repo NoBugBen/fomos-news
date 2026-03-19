@@ -26,6 +26,10 @@ Phase 2: backend scaffold
 - Implemented initial SQLite v1 schema for news, briefing, subscribers, and admin sessions
 - Wired startup to open SQLite eagerly, enable foreign keys, create the DB file if missing, and run migrations on boot
 - Verified the backend still compiles after schema bootstrap changes
+- Implemented bearer-token validation for service-to-service ingest using `INGEST_BEARER_TOKEN`
+- Implemented `POST /api/ingest/news` request validation, transactional persistence, tag inserts, and duplicate reporting across `dedupe_key` and `content_hash`
+- Implemented `POST /api/ingest/briefings` transactional upsert-by-date with full section/item replacement for the target day
+- Kept browser-session auth endpoints scaffolded without rewiring frontend auth flows
 
 ## Confirmed facts established
 - The source archive contains a Vite + React + TypeScript frontend project.
@@ -46,7 +50,8 @@ Phase 2: backend scaffold
 - v1 backend scope excludes markets, leaderboard, and ecosystem APIs until a later approved phase
 
 ## Next
-- Replace placeholder handlers with real auth, ingest, read, and subscribe logic
+- Implement public read handlers for news and briefings against the persisted SQLite data
+- Implement subscribe workflow and session-backed browser auth flows
 - Connect frontend to backend in a later implementation phase
 
 ## Blockers
