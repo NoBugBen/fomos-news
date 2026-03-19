@@ -1,14 +1,20 @@
 # Task Board
 
 ## Todo
-- Confirm exact frontend integration points from extracted source
-- Draft backend architecture and API contract
-- Implement Rust backend
+- Resolve open product questions around briefing creation flow and admin operations
+- Approve or revise the proposed v1 API contract
+- Approve or revise the proposed auth approach
+- Approve or revise the proposed dedupe strategy
+- Scaffold Rust backend
+- Implement SQLite schema and migrations
+- Implement authenticated ingest API
+- Implement public read APIs for news and briefing
+- Implement subscribe API
 - Connect frontend to backend
 - Add deployment files and runbook
 
 ## Doing
-- Reconnaissance reporting and confirmation
+- Design review and decision confirmation
 
 ## Done
 - Project directory confirmed
@@ -19,3 +25,6 @@
 - Frontend stack identified
 - Current data-source pattern identified
 - Existing API-related placeholders noted
+- Exact frontend integration points verified from source
+- v1 backend design documented
+- Backend stack ADR finalized for Rust + SQLite v1
