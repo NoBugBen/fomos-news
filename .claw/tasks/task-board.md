@@ -1,19 +1,21 @@
 # Task Board
 
 ## Todo
-- Inspect `fomos-news-design-spec.zip`
-- Inspect `fomos-news-repo.zip`
-- Unpack archives into tracked project folders
-- Identify frontend stack and data flow
-- Confirm whether frontend has any API abstraction/hooks
+- Confirm exact frontend integration points from extracted source
 - Draft backend architecture and API contract
 - Implement Rust backend
 - Connect frontend to backend
 - Add deployment files and runbook
 
 ## Doing
-- Governance initialization
+- Reconnaissance reporting and confirmation
 
 ## Done
 - Project directory confirmed
 - Archive filenames confirmed
+- Governance initialization
+- Archive inspection completed
+- Archives extracted into controlled project folders
+- Frontend stack identified
+- Current data-source pattern identified
+- Existing API-related placeholders noted
