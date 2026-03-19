@@ -1,7 +1,7 @@
 # Progress Log
 
 ## Current stage
-Phase 2: backend scaffold
+Phase 3: thin frontend/backend integration
 
 ## Completed
 - Confirmed project directory exists
@@ -37,6 +37,13 @@ Phase 2: backend scaffold
 - Kept browser-session auth endpoints scaffolded without rewiring frontend auth flows
 - Audited extracted frontend integration readiness against implemented Rust APIs for news, briefings, subscribe, and auth/session touchpoints
 - Recorded exact contract matches, remaining frontend wiring gaps, cookie-name mismatch, and smallest adaptation paths in the handoff docs
+- Wired extracted homepage news feed and hot-news sidebar to `GET /api/news`
+- Wired extracted homepage briefing preview and briefing page to `GET /api/briefings/latest`
+- Wired extracted subscribe modal to `POST /api/subscribe` with real success/error handling
+- Preserved markets, leaderboard, and ecosystem as static/mock-driven and intentionally unwired
+- Added a minimal frontend API adapter layer for current Rust response shapes, including safe fallback when briefing item `sourceUrl` is absent
+- Noted the backend/frontend session cookie-name alignment requirement in `.env.example` for later auth work
+- Verified the extracted frontend still type-checks and builds after the integration changes
 
 ## Confirmed facts established
 - The source archive contains a Vite + React + TypeScript frontend project.
@@ -62,7 +69,8 @@ Phase 2: backend scaffold
 
 ## Next
 - Connect real upstream OAuth identity verification to replace the local bootstrap session path
-- Connect frontend to backend in a later implementation phase, starting with homepage news, briefing latest, and subscribe modal wiring
+- Decide how the extracted frontend will reach the Rust backend in local/dev deployment, since the current frontend project does not proxy `/api` by itself
+- Add explicit empty-state UX or retry controls only if product scope expands beyond the current minimal integration
 
 ## Blockers
 - No technical blocker for design

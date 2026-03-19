@@ -4,9 +4,10 @@
 // Sections: Hero, Market Signal Bar, News Feed, Featured Briefing
 // ============================================================
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { newsItems, categoryLabels, categoryColors, marketSignal, dailyBriefing } from "@/lib/sampleData";
+import { categoryLabels, categoryColors, marketSignal, type NewsItem } from "@/lib/sampleData";
+import { fetchLatestBriefing, fetchNews } from "@/lib/api";
 import { ArrowRight, Star, Flame, Clock, ExternalLink, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -26,15 +27,18 @@ function StarRating({ stars }: { stars: number }) {
   );
 }
 
-function NewsCard({ item, index }: { item: (typeof newsItems)[0]; index: number }) {
+function NewsCard({ item, index }: { item: NewsItem; index: number }) {
+  const categoryLabel = categoryLabels[item.category] ?? item.category;
+  const categoryColor = categoryColors[item.category] ?? "text-[var(--muted-foreground)]";
+
   return (
     <article
       className="neon-card p-4 group cursor-pointer animate-fade-in-up"
       style={{ animationDelay: `${index * 0.05}s`, animationFillMode: "both" }}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <span className={`terminal-text text-xs font-medium ${categoryColors[item.category]}`}>
-          [{categoryLabels[item.category]}]
+        <span className={`terminal-text text-xs font-medium ${categoryColor}`}>
+          [{categoryLabel}]
         </span>
         <div className="flex items-center gap-2 shrink-0">
           {item.isHot && (
@@ -139,6 +143,59 @@ function MarketSignalBar() {
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
+  const [briefing, setBriefing] = useState<Awaited<ReturnType<typeof fetchLatestBriefing>> | null>(null);
+  const [newsLoading, setNewsLoading] = useState(true);
+  const [briefingLoading, setBriefingLoading] = useState(true);
+  const [newsError, setNewsError] = useState<string | null>(null);
+  const [briefingError, setBriefingError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setNewsLoading(true);
+    setBriefingLoading(true);
+    setNewsError(null);
+    setBriefingError(null);
+
+    fetchNews()
+      .then((items) => {
+        if (!cancelled) {
+          setNewsItems(items);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setNewsError(error instanceof Error ? error.message : "新闻加载失败");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setNewsLoading(false);
+        }
+      });
+
+    fetchLatestBriefing()
+      .then((payload) => {
+        if (!cancelled) {
+          setBriefing(payload);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setBriefingError(error instanceof Error ? error.message : "简报加载失败");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setBriefingLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const categories = [
     { key: "all", label: "全部" },
@@ -150,6 +207,7 @@ export default function Home() {
     : newsItems.filter((n) => n.category === activeCategory);
 
   const hotNews = newsItems.filter((n) => n.isHot).slice(0, 3);
+  const previewItems = briefing?.sections[0]?.items.slice(0, 3) ?? [];
 
   return (
     <div className="scanlines">
@@ -212,11 +270,25 @@ export default function Home() {
             </div>
 
             {/* News Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {filtered.map((item, i) => (
-                <NewsCard key={item.id} item={item} index={i} />
-              ))}
-            </div>
+            {newsLoading ? (
+              <div className="cyber-panel p-4 terminal-text text-xs text-[var(--muted-foreground)]">
+                // 正在加载新闻数据...
+              </div>
+            ) : newsError ? (
+              <div className="cyber-panel p-4 terminal-text text-xs text-[var(--cyber-red)]">
+                // 新闻加载失败: {newsError}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="cyber-panel p-4 terminal-text text-xs text-[var(--muted-foreground)]">
+                // 当前分类下暂无新闻
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {filtered.map((item, i) => (
+                  <NewsCard key={item.id} item={item} index={i} />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* ── Right Sidebar ── */}
@@ -228,21 +300,35 @@ export default function Home() {
                 <span className="terminal-text text-xs text-[var(--neon)]">// HOT_SIGNALS</span>
               </div>
               <div className="space-y-3">
-                {hotNews.map((item, i) => (
-                  <div key={item.id} className="flex gap-2 group cursor-pointer">
-                    <span className="terminal-text text-lg font-bold text-[var(--panel-border)] shrink-0 leading-tight">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <div>
-                      <p className="text-xs text-[var(--foreground)] leading-snug group-hover:text-[var(--neon)] transition-colors">
-                        {item.title}
-                      </p>
-                      <span className={`terminal-text text-xs ${categoryColors[item.category]}`}>
-                        {categoryLabels[item.category]}
-                      </span>
-                    </div>
+                {newsLoading ? (
+                  <div className="terminal-text text-xs text-[var(--muted-foreground)]">
+                    正在同步热点新闻...
                   </div>
-                ))}
+                ) : newsError ? (
+                  <div className="terminal-text text-xs text-[var(--cyber-red)]">
+                    热点新闻暂不可用
+                  </div>
+                ) : hotNews.length === 0 ? (
+                  <div className="terminal-text text-xs text-[var(--muted-foreground)]">
+                    暂无热点新闻
+                  </div>
+                ) : (
+                  hotNews.map((item, i) => (
+                    <div key={item.id} className="flex gap-2 group cursor-pointer">
+                      <span className="terminal-text text-lg font-bold text-[var(--panel-border)] shrink-0 leading-tight">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <div>
+                        <p className="text-xs text-[var(--foreground)] leading-snug group-hover:text-[var(--neon)] transition-colors">
+                          {item.title}
+                        </p>
+                        <span className={`terminal-text text-xs ${categoryColors[item.category] ?? "text-[var(--muted-foreground)]"}`}>
+                          {categoryLabels[item.category] ?? item.category}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -257,23 +343,37 @@ export default function Home() {
                 </Link>
               </div>
               <div className="terminal-text text-xs text-[var(--muted-foreground)] mb-3">
-                💡 产品洞察日报 · {dailyBriefing.date}
+                💡 产品洞察日报 · {briefing?.date ?? "最新简报"}
               </div>
-              {dailyBriefing.sections[0].items.slice(0, 3).map((item, i) => (
-                <div key={item.id} className="mb-2 pb-2 border-b border-[var(--panel-border)] last:border-0 last:mb-0 last:pb-0">
-                  <div className="flex items-start gap-1.5">
-                    <span className="terminal-text text-xs text-[var(--neon)] shrink-0">{["❶","❷","❸"][i] ?? `${i+1}.`}</span>
-                    <div>
-                      <span className="text-xs font-medium text-[var(--foreground)]">{item.title}</span>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Star key={s} size={8} className={s <= item.stars ? "star-filled fill-current" : "star-empty"} />
-                        ))}
+              {briefingLoading ? (
+                <div className="terminal-text text-xs text-[var(--muted-foreground)]">
+                  正在加载简报预览...
+                </div>
+              ) : briefingError ? (
+                <div className="terminal-text text-xs text-[var(--cyber-red)]">
+                  简报预览加载失败: {briefingError}
+                </div>
+              ) : previewItems.length === 0 ? (
+                <div className="terminal-text text-xs text-[var(--muted-foreground)]">
+                  暂无简报内容
+                </div>
+              ) : (
+                previewItems.map((item, i) => (
+                  <div key={item.id} className="mb-2 pb-2 border-b border-[var(--panel-border)] last:border-0 last:mb-0 last:pb-0">
+                    <div className="flex items-start gap-1.5">
+                      <span className="terminal-text text-xs text-[var(--neon)] shrink-0">{["❶","❷","❸"][i] ?? `${i+1}.`}</span>
+                      <div>
+                        <span className="text-xs font-medium text-[var(--foreground)]">{item.title}</span>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star key={s} size={8} className={s <= item.stars ? "star-filled fill-current" : "star-empty"} />
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
             {/* Quick Links */}

@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { subscribeEmail } from "@/lib/api";
 import { toast } from "sonner";
 import { Mail, CheckCircle, Terminal } from "lucide-react";
 
@@ -19,6 +20,7 @@ export default function SubscribeModal({ open, onClose }: SubscribeModalProps) {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,16 +29,33 @@ export default function SubscribeModal({ open, onClose }: SubscribeModalProps) {
       return;
     }
     setLoading(true);
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    setSubmitted(true);
-    toast.success("订阅成功！每日简报将发送至您的邮箱");
+    try {
+      const response = await subscribeEmail(email);
+      setEmail(response.email);
+      setSubmitMessage(
+        response.alreadySubscribed
+          ? "该邮箱已在订阅列表中，我们会继续发送最新简报。"
+          : "明天早 8 点，第一份简报将发送至您的邮箱。",
+      );
+      setSubmitted(true);
+      toast.success(
+        response.alreadySubscribed
+          ? "该邮箱已订阅，无需重复提交"
+          : "订阅成功！每日简报将发送至您的邮箱",
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "订阅失败，请稍后重试");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClose = () => {
     onClose();
-    setTimeout(() => setSubmitted(false), 300);
+    setTimeout(() => {
+      setSubmitted(false);
+      setSubmitMessage("");
+    }, 300);
   };
 
   return (
@@ -119,7 +138,7 @@ export default function SubscribeModal({ open, onClose }: SubscribeModalProps) {
               <div className="terminal-text text-xs text-[var(--neon)] mb-2">// SUBSCRIPTION_CONFIRMED</div>
               <h3 className="font-['JetBrains_Mono'] font-bold text-lg mb-2">订阅成功！</h3>
               <p className="text-sm text-[var(--muted-foreground)] mb-4">
-                明天早 8 点，第一份简报将发送至<br />
+                {submitMessage}<br />
                 <span className="text-[var(--neon)] terminal-text">{email}</span>
               </p>
               <Button

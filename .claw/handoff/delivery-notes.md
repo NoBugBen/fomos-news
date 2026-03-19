@@ -3,7 +3,20 @@
 This folder tracks delivery artifacts for the Fomos News project.
 
 ## Current status
-Rust backend APIs for health, news, briefings, subscribe, and auth/session are implemented. Frontend source is still extracted and unwired, and the latest handoff update records integration readiness and exact remaining gaps.
+Rust backend APIs for health, news, briefings, subscribe, and auth/session are implemented. The extracted frontend is now minimally wired for homepage news, homepage latest briefing preview, briefing page latest briefing view, and subscribe submission. Markets, leaderboard, and ecosystem remain intentionally static and unwired.
+
+## Frontend wiring delivered (2026-03-19)
+- `GET /api/news` now feeds the extracted homepage news grid and hot-news sidebar through a small adapter in `extracted/repo/fomos-news/client/src/lib/api.ts`.
+- `GET /api/briefings/latest` now feeds both the homepage briefing preview and the briefing page.
+- `POST /api/subscribe` now backs the subscribe modal, including error display via toast and idempotent messaging for already-subscribed emails.
+- Briefing item source links now use backend `sourceUrl` when present and render plain source text when absent.
+- Loading, empty, and failure states were added in-place with minimal UI changes.
+- No frontend wiring was added for markets, leaderboard, ecosystem, or auth/session flows.
+
+## Remaining integration notes
+- The extracted frontend still assumes the browser can reach `/api` on the same origin. There is no new Vite proxy or Express bridge in this change set, so local/dev serving still needs an external reverse proxy, same-origin deployment, or a later frontend-server adaptation.
+- Cookie-name alignment is still a later auth task. The extracted frontend shared constant remains `app_session_id`, while backend default env remains `fomos_news_session`; `.env.example` now notes that `SESSION_COOKIE_NAME` should be set to `app_session_id` before frontend auth/session wiring begins.
+- Real upstream OAuth identity verification is still not implemented. The backend callback remains a local bootstrap path after `code` and `state` validation.
 
 ## Resume protocol
 1. Read `.claw/plans/implementation-plan.md`

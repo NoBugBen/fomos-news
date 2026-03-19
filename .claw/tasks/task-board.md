@@ -5,9 +5,9 @@
 - Approve or revise the proposed v1 API contract
 - Approve or revise the proposed auth approach
 - Approve or revise the proposed dedupe strategy
-- Connect frontend to backend
 - Add deployment files and runbook
 - Align deployed `SESSION_COOKIE_NAME` with extracted frontend constant before wiring frontend auth/session flows
+- Decide local/dev routing or proxy arrangement so the extracted frontend can reach the Rust `/api` origin consistently
 
 ## Doing
 - Connect real upstream OAuth identity verification for browser sessions
@@ -32,3 +32,5 @@
 - Browser-session auth endpoints implemented against SQLite `admin_sessions` with cookie-backed session read, logout, and OAuth callback bootstrap
 - Documented the current limitation that OAuth callback session creation is a local bootstrap path until real upstream identity verification is wired
 - Frontend integration readiness audited against the implemented Rust backend, with exact gaps and smallest adaptation paths recorded in handoff docs
+- Extracted frontend wired to backend for homepage news, homepage latest briefing preview, briefing page latest briefing view, and subscribe modal submission
+- Markets, leaderboard, and ecosystem left untouched and still backed by static/mock data

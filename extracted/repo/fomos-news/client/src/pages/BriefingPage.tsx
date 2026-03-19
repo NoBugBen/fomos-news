@@ -3,8 +3,8 @@
 // Design: Neural Cyberpunk — terminal output style briefing
 // ============================================================
 
-import { useState } from "react";
-import { dailyBriefing } from "@/lib/sampleData";
+import { useEffect, useState } from "react";
+import { fetchLatestBriefing } from "@/lib/api";
 import { Star, ChevronDown, ChevronUp, ExternalLink, Terminal } from "lucide-react";
 
 const BRIEFING_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663295056596/5yGwWBPmUEGL4RxsXqWZbC/fomos-briefing-header-JjZ95CoBgSA7BqfcpHFfVR.webp";
@@ -23,10 +23,41 @@ const rankSymbols = ["❶", "❷", "❸", "❹", "❺", "❻", "❼", "❽", "�
 
 export default function BriefingPage() {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [briefing, setBriefing] = useState<Awaited<ReturnType<typeof fetchLatestBriefing>> | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const toggleSection = (title: string) => {
     setExpandedSections((prev) => ({ ...prev, [title]: !prev[title] }));
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setLoading(true);
+    setError(null);
+
+    fetchLatestBriefing()
+      .then((payload) => {
+        if (!cancelled) {
+          setBriefing(payload);
+        }
+      })
+      .catch((nextError: unknown) => {
+        if (!cancelled) {
+          setError(nextError instanceof Error ? nextError.message : "简报加载失败");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="scanlines">
@@ -41,7 +72,7 @@ export default function BriefingPage() {
             产品洞察日报
           </h1>
           <p className="terminal-text text-sm text-[var(--muted-foreground)] mt-1">
-            {dailyBriefing.date} · AI & Crypto Intelligence
+            {briefing?.date ?? "最新一期"} · AI & Crypto Intelligence
           </p>
         </div>
       </section>
@@ -57,18 +88,31 @@ export default function BriefingPage() {
             </div>
             <span className="terminal-text text-xs text-[var(--muted-foreground)] flex items-center gap-1.5 ml-2">
               <Terminal size={11} />
-              fomos@news:~$ cat briefing_{dailyBriefing.date.replace(/年|月|日/g, "-").slice(0, -1)}.md
+              fomos@news:~$ cat briefing_{(briefing?.briefingDate ?? "latest").replaceAll("/", "-")}.md
             </span>
           </div>
           <div className="p-4 terminal-text text-sm">
-            <div className="text-[var(--neon)] mb-1">💡 产品洞察日报 · {dailyBriefing.date}</div>
+            <div className="text-[var(--neon)] mb-1">💡 产品洞察日报 · {briefing?.date ?? "最新一期"}</div>
             <div className="text-[var(--muted-foreground)]">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
           </div>
         </div>
 
         {/* Briefing Sections */}
         <div className="space-y-4">
-          {dailyBriefing.sections.map((section) => {
+          {loading ? (
+            <div className="cyber-panel p-4 terminal-text text-xs text-[var(--muted-foreground)]">
+              // 正在加载最新简报...
+            </div>
+          ) : error ? (
+            <div className="cyber-panel p-4 terminal-text text-xs text-[var(--cyber-red)]">
+              // 简报加载失败: {error}
+            </div>
+          ) : !briefing || briefing.sections.length === 0 ? (
+            <div className="cyber-panel p-4 terminal-text text-xs text-[var(--muted-foreground)]">
+              // 暂无可展示的简报内容
+            </div>
+          ) : (
+            briefing.sections.map((section) => {
             const isExpanded = expandedSections[section.title] !== false; // default expanded
 
             return (
@@ -111,13 +155,21 @@ export default function BriefingPage() {
                             <div className="flex items-center gap-2 mb-2">
                               <span className="data-badge text-[0.6rem]">{item.company}</span>
                               <span className="terminal-text text-xs text-[var(--muted-foreground)]">{item.date}</span>
-                              <a
-                                href="#"
-                                className="flex items-center gap-0.5 terminal-text text-xs text-[var(--cyber-blue)] hover:underline"
-                              >
-                                {item.source}
-                                <ExternalLink size={9} />
-                              </a>
+                              {item.sourceUrl ? (
+                                <a
+                                  href={item.sourceUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-0.5 terminal-text text-xs text-[var(--cyber-blue)] hover:underline"
+                                >
+                                  {item.source}
+                                  <ExternalLink size={9} />
+                                </a>
+                              ) : (
+                                <span className="terminal-text text-xs text-[var(--muted-foreground)]">
+                                  {item.source}
+                                </span>
+                              )}
                             </div>
                             <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
                               {item.summary}
@@ -130,7 +182,8 @@ export default function BriefingPage() {
                 )}
               </div>
             );
-          })}
+          })
+          )}
         </div>
 
         {/* Analysis Section */}
@@ -140,15 +193,15 @@ export default function BriefingPage() {
           </div>
           <div className="p-4 space-y-4">
             {[
-              { label: "产品趋势", value: dailyBriefing.analysis.trend, icon: "▸" },
-              { label: "竞争动态", value: dailyBriefing.analysis.competition, icon: "▸" },
-              { label: "需求信号", value: dailyBriefing.analysis.demand, icon: "▸" },
+              { label: "产品趋势", value: briefing?.analysis.trend, icon: "▸" },
+              { label: "竞争动态", value: briefing?.analysis.competition, icon: "▸" },
+              { label: "需求信号", value: briefing?.analysis.demand, icon: "▸" },
             ].map(({ label, value, icon }) => (
               <div key={label} className="flex gap-3">
                 <span className="terminal-text text-sm text-[var(--neon)] shrink-0">{icon}</span>
                 <div>
                   <span className="terminal-text text-xs font-semibold text-[var(--neon)] mr-2">{label}:</span>
-                  <span className="text-sm text-[var(--muted-foreground)] leading-relaxed">{value}</span>
+                  <span className="text-sm text-[var(--muted-foreground)] leading-relaxed">{value ?? (loading ? "加载中..." : "暂无数据")}</span>
                 </div>
               </div>
             ))}
