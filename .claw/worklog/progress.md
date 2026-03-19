@@ -33,6 +33,7 @@ Phase 2: backend scaffold
 - Added news cursor pagination, category/hot filters, and tag loading on read responses
 - Exposed briefing archive metadata plus fully hydrated persisted briefing sections/items for latest and by-date reads
 - Implemented `POST /api/subscribe` with conservative email validation, normalization, idempotent active-subscription handling, and SQLite persistence
+- Implemented SQLite-backed browser session endpoints for `GET /api/auth/session`, `POST /api/auth/logout`, and `GET /api/oauth/callback`
 - Kept browser-session auth endpoints scaffolded without rewiring frontend auth flows
 
 ## Confirmed facts established
@@ -52,9 +53,10 @@ Phase 2: backend scaffold
 - Auth model: session cookie for browser/admin access plus bearer token for service-to-service ingest
 - Dedupe model: deterministic normalized `dedupe_key` plus content hash safeguard
 - v1 backend scope excludes markets, leaderboard, and ecosystem APIs until a later approved phase
+- Current OAuth callback handling still does not verify upstream identity against the provider; it now creates a local bootstrap `editor` session only after `code` and `state` validation so the browser flow remains controlled and compile-safe without inventing unsupported provider calls
 
 ## Next
-- Implement session-backed browser auth flows
+- Connect real upstream OAuth identity verification to replace the local bootstrap session path
 - Connect frontend to backend in a later implementation phase
 
 ## Blockers

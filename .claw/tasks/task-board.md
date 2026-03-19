@@ -9,7 +9,7 @@
 - Add deployment files and runbook
 
 ## Doing
-- Browser-session auth implementation
+- Connect real upstream OAuth identity verification for browser sessions
 
 ## Done
 - Project directory confirmed
@@ -28,3 +28,5 @@
 - Authenticated ingest API implemented for news and briefings
 - Public read APIs implemented for `/api/news`, `/api/news/:id`, `/api/briefings/latest`, `/api/briefings`, and `/api/briefings/:date`
 - Subscribe API implemented for `POST /api/subscribe` with normalized email persistence and idempotent active-subscription behavior
+- Browser-session auth endpoints implemented against SQLite `admin_sessions` with cookie-backed session read, logout, and OAuth callback bootstrap
+- Documented the current limitation that OAuth callback session creation is a local bootstrap path until real upstream identity verification is wired
