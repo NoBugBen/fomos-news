@@ -26,7 +26,8 @@ Rust backend APIs for health, news, briefings, subscribe, and auth/session are i
 - Added `extracted/repo/fomos-news/.env.example` for frontend-local env placeholders without inventing real OAuth or map-provider values.
 - Added `docs/routing-and-runbook.md` with the supported local/dev flow, same-origin deployment flow, and explicit non-goals.
 - Validation completed on the Rust side with `cargo fmt --all` and `cargo check --offline`.
-- Frontend validation could not be run here because `pnpm` is not installed and `extracted/repo/fomos-news/node_modules` is absent in this sandbox.
+- Frontend validation was later completed in this environment using `corepack pnpm`: `corepack pnpm install --frozen-lockfile`, `corepack pnpm check`, and `corepack pnpm build` all completed after fixing one TypeScript category-union mismatch in `extracted/repo/fomos-news/client/src/lib/api.ts`.
+- The frontend production build still emits warnings for unresolved optional analytics placeholders in `index.html` and for a large JS chunk (~852 kB before gzip), but it completes successfully.
 
 ## Resume protocol
 1. Read `.claw/plans/implementation-plan.md`

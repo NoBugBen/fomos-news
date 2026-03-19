@@ -48,6 +48,9 @@ Phase 3: thin frontend/backend integration
 - Added `FRONTEND_DIST_DIR` support to backend config and a minimal SPA fallback handler that serves the built frontend without introducing external reverse-proxy infrastructure
 - Added a frontend `.env.example` with local routing placeholders and documented the run flow in `docs/routing-and-runbook.md`
 - Verified the Rust backend routing changes with `cargo fmt --all` and `cargo check --offline`
+- Installed extracted frontend dependencies with `corepack pnpm install --frozen-lockfile` in the current environment
+- Fixed a real TypeScript adapter mismatch in `client/src/lib/api.ts` by normalizing backend news categories into the frontend `NewsItem` union type
+- Verified the extracted frontend with `corepack pnpm check` and `corepack pnpm build`; production build completed successfully, with warnings only for unresolved optional analytics env placeholders and large bundle size
 
 ## Confirmed facts established
 - The source archive contains a Vite + React + TypeScript frontend project.

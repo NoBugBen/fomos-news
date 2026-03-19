@@ -6,7 +6,7 @@
 - Approve or revise the proposed auth approach
 - Approve or revise the proposed dedupe strategy
 - Align deployed `SESSION_COOKIE_NAME` with extracted frontend constant before wiring frontend auth/session flows
-- Validate the extracted frontend with installed tooling once `pnpm` and dependencies are available in the environment
+- Review whether to trim the current frontend production bundle size or defer chunk-splitting optimization to a later phase
 
 ## Doing
 - Connect real upstream OAuth identity verification for browser sessions

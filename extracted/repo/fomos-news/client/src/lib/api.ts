@@ -1,5 +1,7 @@
 import type { BriefingItem, DailyBriefing, NewsItem } from "@/lib/sampleData";
 
+const VALID_NEWS_CATEGORIES = ["ai-trend", "product-insight", "crypto", "trading-agent", "global"] as const;
+
 type ApiErrorEnvelope = {
   error?: {
     message?: string;
@@ -66,11 +68,18 @@ function clampStars(stars: number) {
   return Math.max(0, Math.min(5, Math.round(stars)));
 }
 
+function normalizeNewsCategory(category: string): NewsItem["category"] {
+  return VALID_NEWS_CATEGORIES.includes(category as NewsItem["category"])
+    ? (category as NewsItem["category"])
+    : "global";
+}
+
 export async function fetchNews() {
   const payload = await requestJson<NewsListResponse>("/api/news");
   return payload.items.map(
     (item): NewsItem => ({
       ...item,
+      category: normalizeNewsCategory(item.category),
       sourceUrl: item.sourceUrl || "#",
       stars: clampStars(item.stars),
       tags: item.tags ?? [],
