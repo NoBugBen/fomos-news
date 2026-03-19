@@ -31,3 +31,7 @@ Thumbs.db
 
 # Archives generated during work
 *.tmp
+
+# Original source archives
+fomos-news-design-spec.zip
+fomos-news-repo.zip
