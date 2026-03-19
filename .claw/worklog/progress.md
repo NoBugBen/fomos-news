@@ -29,6 +29,9 @@ Phase 2: backend scaffold
 - Implemented bearer-token validation for service-to-service ingest using `INGEST_BEARER_TOKEN`
 - Implemented `POST /api/ingest/news` request validation, transactional persistence, tag inserts, and duplicate reporting across `dedupe_key` and `content_hash`
 - Implemented `POST /api/ingest/briefings` transactional upsert-by-date with full section/item replacement for the target day
+- Implemented SQLite-backed public read APIs for news list/detail and briefing latest/archive/by-date
+- Added news cursor pagination, category/hot filters, and tag loading on read responses
+- Exposed briefing archive metadata plus fully hydrated persisted briefing sections/items for latest and by-date reads
 - Kept browser-session auth endpoints scaffolded without rewiring frontend auth flows
 
 ## Confirmed facts established
@@ -50,7 +53,6 @@ Phase 2: backend scaffold
 - v1 backend scope excludes markets, leaderboard, and ecosystem APIs until a later approved phase
 
 ## Next
-- Implement public read handlers for news and briefings against the persisted SQLite data
 - Implement subscribe workflow and session-backed browser auth flows
 - Connect frontend to backend in a later implementation phase
 

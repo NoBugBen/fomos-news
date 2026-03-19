@@ -5,7 +5,7 @@ use axum::{
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::Row;
+use sqlx::{QueryBuilder, Row, Sqlite};
 use std::collections::BTreeSet;
 
 use crate::{
@@ -23,9 +23,44 @@ struct NewsListQuery {
 }
 
 #[derive(Debug, Serialize)]
-struct PlaceholderResponse {
-    status: &'static str,
-    message: &'static str,
+#[serde(rename_all = "camelCase")]
+struct NewsListResponse {
+    items: Vec<NewsListItem>,
+    next_cursor: Option<String>,
+    limit: u32,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct NewsListItem {
+    id: String,
+    title: String,
+    summary: String,
+    category: String,
+    source: String,
+    source_url: String,
+    date: String,
+    stars: i64,
+    tags: Vec<String>,
+    is_hot: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct NewsDetailResponse {
+    id: String,
+    title: String,
+    summary: String,
+    content_markdown: String,
+    category: String,
+    source: String,
+    source_url: String,
+    date: String,
+    stars: i64,
+    tags: Vec<String>,
+    is_hot: bool,
+    language: String,
+    author: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -81,25 +116,149 @@ pub fn router() -> Router<AppState> {
 async fn list_news(
     State(state): State<AppState>,
     Query(query): Query<NewsListQuery>,
-) -> Result<Json<PlaceholderResponse>, AppError> {
-    let _ = state.db();
-    let _ = (query.category, query.limit, query.cursor, query.hot_only);
+) -> Result<Json<NewsListResponse>, AppError> {
+    let limit = normalize_news_limit(query.limit)?;
+    let cursor = query.cursor.as_deref().map(parse_news_cursor).transpose()?;
 
-    Err(AppError::not_implemented(
-        "News listing is scaffolded but not implemented yet",
-    ))
+    let mut query_builder = QueryBuilder::<Sqlite>::new(
+        r#"
+        SELECT
+            id,
+            title,
+            summary,
+            category,
+            source_name,
+            source_url,
+            published_at,
+            rating,
+            is_hot
+        FROM news_items
+        "#,
+    );
+
+    let mut has_where = false;
+
+    if let Some(category) = query
+        .category
+        .as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
+        query_builder.push(if has_where { " AND " } else { " WHERE " });
+        query_builder.push("category = ");
+        query_builder.push_bind(category);
+        has_where = true;
+    }
+
+    if query.hot_only.unwrap_or(false) {
+        query_builder.push(if has_where { " AND " } else { " WHERE " });
+        query_builder.push("is_hot = 1");
+        has_where = true;
+    }
+
+    if let Some((published_at, id)) = cursor.as_ref() {
+        query_builder.push(if has_where { " AND " } else { " WHERE " });
+        query_builder.push("(published_at < ");
+        query_builder.push_bind(published_at);
+        query_builder.push(" OR (published_at = ");
+        query_builder.push_bind(published_at);
+        query_builder.push(" AND id < ");
+        query_builder.push_bind(id);
+        query_builder.push("))");
+    }
+
+    query_builder.push(" ORDER BY published_at DESC, id DESC LIMIT ");
+    query_builder.push_bind((limit + 1) as i64);
+
+    let rows = query_builder
+        .build()
+        .fetch_all(state.db())
+        .await
+        .map_err(|error| AppError::internal(format!("failed to list news items: {error}")))?;
+
+    let has_more = rows.len() > limit as usize;
+    let rows = rows.into_iter().take(limit as usize).collect::<Vec<_>>();
+    let mut items = Vec::with_capacity(rows.len());
+
+    for row in &rows {
+        let id: String = row.get("id");
+        let tags = load_news_tags(&state, &id).await?;
+
+        items.push(NewsListItem {
+            id,
+            title: row.get("title"),
+            summary: row.get("summary"),
+            category: row.get("category"),
+            source: row.get("source_name"),
+            source_url: row.get("source_url"),
+            date: row.get("published_at"),
+            stars: row.get("rating"),
+            tags,
+            is_hot: row.get("is_hot"),
+        });
+    }
+
+    let next_cursor = if has_more {
+        items
+            .last()
+            .map(|item| format_news_cursor(&item.date, &item.id))
+    } else {
+        None
+    };
+
+    Ok(Json(NewsListResponse {
+        items,
+        next_cursor,
+        limit,
+    }))
 }
 
 async fn get_news(
     State(state): State<AppState>,
     Path(news_id): Path<String>,
-) -> Result<Json<PlaceholderResponse>, AppError> {
-    let _ = state.db();
-    let _ = news_id;
+) -> Result<Json<NewsDetailResponse>, AppError> {
+    let row = sqlx::query(
+        r#"
+        SELECT
+            id,
+            title,
+            summary,
+            content_markdown,
+            category,
+            source_name,
+            source_url,
+            published_at,
+            rating,
+            is_hot,
+            language,
+            author
+        FROM news_items
+        WHERE id = ?
+        "#,
+    )
+    .bind(&news_id)
+    .fetch_optional(state.db())
+    .await
+    .map_err(|error| AppError::internal(format!("failed to load news item: {error}")))?
+    .ok_or_else(|| AppError::not_found(format!("news item not found: {news_id}")))?;
 
-    Err(AppError::not_implemented(
-        "News detail is scaffolded but not implemented yet",
-    ))
+    let tags = load_news_tags(&state, &news_id).await?;
+
+    Ok(Json(NewsDetailResponse {
+        id: row.get("id"),
+        title: row.get("title"),
+        summary: row.get("summary"),
+        content_markdown: row.get("content_markdown"),
+        category: row.get("category"),
+        source: row.get("source_name"),
+        source_url: row.get("source_url"),
+        date: row.get("published_at"),
+        stars: row.get("rating"),
+        tags,
+        is_hot: row.get("is_hot"),
+        language: row.get("language"),
+        author: row.get("author"),
+    }))
 }
 
 async fn ingest_news(
@@ -262,6 +421,47 @@ fn optional_trimmed(value: Option<&str>) -> Option<&str> {
             Some(trimmed)
         }
     })
+}
+
+fn normalize_news_limit(limit: Option<u32>) -> Result<u32, AppError> {
+    const DEFAULT_LIMIT: u32 = 20;
+    const MAX_LIMIT: u32 = 50;
+
+    match limit.unwrap_or(DEFAULT_LIMIT) {
+        0 => Err(AppError::bad_request("limit must be greater than 0")),
+        value if value > MAX_LIMIT => Ok(MAX_LIMIT),
+        value => Ok(value),
+    }
+}
+
+fn parse_news_cursor(cursor: &str) -> Result<(String, String), AppError> {
+    let (published_at, id) = cursor
+        .split_once('|')
+        .ok_or_else(|| AppError::bad_request("cursor must be in the format <published_at>|<id>"))?;
+
+    let published_at = published_at.trim();
+    let id = id.trim();
+    if published_at.is_empty() || id.is_empty() {
+        return Err(AppError::bad_request(
+            "cursor must include both published_at and id values",
+        ));
+    }
+
+    Ok((published_at.to_string(), id.to_string()))
+}
+
+fn format_news_cursor(published_at: &str, id: &str) -> String {
+    format!("{published_at}|{id}")
+}
+
+async fn load_news_tags(state: &AppState, news_id: &str) -> Result<Vec<String>, AppError> {
+    let rows = sqlx::query("SELECT tag FROM news_tags WHERE news_id = ? ORDER BY tag ASC")
+        .bind(news_id)
+        .fetch_all(state.db())
+        .await
+        .map_err(|error| AppError::internal(format!("failed to load news tags: {error}")))?;
+
+    Ok(rows.into_iter().map(|row| row.get("tag")).collect())
 }
 
 fn normalize_tags(tags: Vec<String>) -> Vec<String> {

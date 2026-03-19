@@ -23,6 +23,14 @@ pub struct AppError {
 }
 
 impl AppError {
+    pub fn not_found(message: impl Into<String>) -> Self {
+        Self {
+            status: StatusCode::NOT_FOUND,
+            code: "not_found",
+            message: message.into(),
+        }
+    }
+
     pub fn not_implemented(message: impl Into<String>) -> Self {
         Self {
             status: StatusCode::NOT_IMPLEMENTED,

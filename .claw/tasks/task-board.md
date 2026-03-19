@@ -5,13 +5,11 @@
 - Approve or revise the proposed v1 API contract
 - Approve or revise the proposed auth approach
 - Approve or revise the proposed dedupe strategy
-- Implement public read APIs for news and briefing
 - Implement subscribe API
 - Connect frontend to backend
 - Add deployment files and runbook
 
 ## Doing
-- Public read APIs for news and briefing
 - Subscribe and browser-session auth implementation
 
 ## Done
@@ -29,3 +27,4 @@
 - Rust backend scaffolded in repo root with config/state/router bootstrap
 - SQLite schema and migrations implemented for the confirmed v1 backend design
 - Authenticated ingest API implemented for news and briefings
+- Public read APIs implemented for `/api/news`, `/api/news/:id`, `/api/briefings/latest`, `/api/briefings`, and `/api/briefings/:date`

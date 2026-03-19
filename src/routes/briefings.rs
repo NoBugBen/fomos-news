@@ -5,6 +5,7 @@ use axum::{
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
+use sqlx::Row;
 use std::collections::BTreeSet;
 
 use crate::{
@@ -19,9 +20,61 @@ struct BriefingsQuery {
 }
 
 #[derive(Debug, Serialize)]
-struct PlaceholderResponse {
-    status: &'static str,
-    message: &'static str,
+#[serde(rename_all = "camelCase")]
+struct BriefingResponse {
+    id: String,
+    briefing_date: String,
+    date: String,
+    analysis: BriefingAnalysisResponse,
+    sections: Vec<BriefingSectionResponse>,
+}
+
+#[derive(Debug, Serialize)]
+struct BriefingAnalysisResponse {
+    trend: String,
+    competition: String,
+    demand: String,
+}
+
+#[derive(Debug, Serialize)]
+struct BriefingSectionResponse {
+    title: String,
+    emoji: String,
+    items: Vec<BriefingSectionItemResponse>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BriefingSectionItemResponse {
+    id: String,
+    rank: i64,
+    title: String,
+    company: String,
+    date: String,
+    summary: String,
+    source: String,
+    source_url: Option<String>,
+    stars: i64,
+    category: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BriefingArchiveResponse {
+    items: Vec<BriefingArchiveItem>,
+    limit: u32,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BriefingArchiveItem {
+    id: String,
+    briefing_date: String,
+    date: String,
+    created_at: String,
+    section_count: i64,
+    item_count: i64,
+    analysis: BriefingAnalysisResponse,
 }
 
 #[derive(Debug, Deserialize)]
@@ -80,36 +133,95 @@ pub fn router() -> Router<AppState> {
 
 async fn get_latest_briefing(
     State(state): State<AppState>,
-) -> Result<Json<PlaceholderResponse>, AppError> {
-    let _ = state.db();
+) -> Result<Json<BriefingResponse>, AppError> {
+    let briefing_id = sqlx::query_scalar::<_, String>(
+        "SELECT id FROM briefings ORDER BY briefing_date DESC, id DESC LIMIT 1",
+    )
+    .fetch_optional(state.db())
+    .await
+    .map_err(|error| AppError::internal(format!("failed to load latest briefing: {error}")))?
+    .ok_or_else(|| AppError::not_found("no briefing found"))?;
 
-    Err(AppError::not_implemented(
-        "Latest briefing read is scaffolded but not implemented yet",
-    ))
+    let briefing = load_briefing_response(&state, &briefing_id).await?;
+    Ok(Json(briefing))
 }
 
 async fn list_briefings(
     State(state): State<AppState>,
     Query(query): Query<BriefingsQuery>,
-) -> Result<Json<PlaceholderResponse>, AppError> {
-    let _ = state.db();
-    let _ = query.limit;
+) -> Result<Json<BriefingArchiveResponse>, AppError> {
+    let limit = normalize_briefings_limit(query.limit)?;
 
-    Err(AppError::not_implemented(
-        "Briefing archive read is scaffolded but not implemented yet",
-    ))
+    let rows = sqlx::query(
+        r#"
+        SELECT
+            b.id,
+            b.briefing_date,
+            b.display_date,
+            b.created_at,
+            b.analysis_trend,
+            b.analysis_competition,
+            b.analysis_demand,
+            COUNT(DISTINCT s.id) AS section_count,
+            COUNT(i.id) AS item_count
+        FROM briefings b
+        LEFT JOIN briefing_sections s ON s.briefing_id = b.id
+        LEFT JOIN briefing_section_items i ON i.section_id = s.id
+        GROUP BY
+            b.id,
+            b.briefing_date,
+            b.display_date,
+            b.created_at,
+            b.analysis_trend,
+            b.analysis_competition,
+            b.analysis_demand
+        ORDER BY b.briefing_date DESC, b.id DESC
+        LIMIT ?
+        "#,
+    )
+    .bind(limit as i64)
+    .fetch_all(state.db())
+    .await
+    .map_err(|error| AppError::internal(format!("failed to list briefings: {error}")))?;
+
+    let items = rows
+        .into_iter()
+        .map(|row| BriefingArchiveItem {
+            id: row.get("id"),
+            briefing_date: row.get("briefing_date"),
+            date: row.get("display_date"),
+            created_at: row.get("created_at"),
+            section_count: row.get("section_count"),
+            item_count: row.get("item_count"),
+            analysis: BriefingAnalysisResponse {
+                trend: row.get("analysis_trend"),
+                competition: row.get("analysis_competition"),
+                demand: row.get("analysis_demand"),
+            },
+        })
+        .collect();
+
+    Ok(Json(BriefingArchiveResponse { items, limit }))
 }
 
 async fn get_briefing_by_date(
     State(state): State<AppState>,
     Path(date): Path<String>,
-) -> Result<Json<PlaceholderResponse>, AppError> {
-    let _ = state.db();
-    let _ = date;
+) -> Result<Json<BriefingResponse>, AppError> {
+    let briefing_id =
+        sqlx::query_scalar::<_, String>("SELECT id FROM briefings WHERE briefing_date = ? LIMIT 1")
+            .bind(date.trim())
+            .fetch_optional(state.db())
+            .await
+            .map_err(|error| {
+                AppError::internal(format!("failed to load briefing by date: {error}"))
+            })?
+            .ok_or_else(|| {
+                AppError::not_found(format!("briefing not found for date: {}", date.trim()))
+            })?;
 
-    Err(AppError::not_implemented(
-        "Briefing read by date is scaffolded but not implemented yet",
-    ))
+    let briefing = load_briefing_response(&state, &briefing_id).await?;
+    Ok(Json(briefing))
 }
 
 async fn ingest_briefing(
@@ -300,5 +412,115 @@ fn optional_trimmed(value: Option<&str>) -> Option<&str> {
         } else {
             Some(trimmed)
         }
+    })
+}
+
+fn normalize_briefings_limit(limit: Option<u32>) -> Result<u32, AppError> {
+    const DEFAULT_LIMIT: u32 = 30;
+    const MAX_LIMIT: u32 = 90;
+
+    match limit.unwrap_or(DEFAULT_LIMIT) {
+        0 => Err(AppError::bad_request("limit must be greater than 0")),
+        value if value > MAX_LIMIT => Ok(MAX_LIMIT),
+        value => Ok(value),
+    }
+}
+
+async fn load_briefing_response(
+    state: &AppState,
+    briefing_id: &str,
+) -> Result<BriefingResponse, AppError> {
+    let briefing = sqlx::query(
+        r#"
+        SELECT
+            id,
+            briefing_date,
+            display_date,
+            analysis_trend,
+            analysis_competition,
+            analysis_demand
+        FROM briefings
+        WHERE id = ?
+        LIMIT 1
+        "#,
+    )
+    .bind(briefing_id)
+    .fetch_optional(state.db())
+    .await
+    .map_err(|error| AppError::internal(format!("failed to load briefing record: {error}")))?
+    .ok_or_else(|| AppError::not_found(format!("briefing not found: {briefing_id}")))?;
+
+    let section_rows = sqlx::query(
+        r#"
+        SELECT id, title, emoji
+        FROM briefing_sections
+        WHERE briefing_id = ?
+        ORDER BY sort_order ASC
+        "#,
+    )
+    .bind(briefing_id)
+    .fetch_all(state.db())
+    .await
+    .map_err(|error| AppError::internal(format!("failed to load briefing sections: {error}")))?;
+
+    let mut sections = Vec::with_capacity(section_rows.len());
+    for section_row in section_rows {
+        let section_id: String = section_row.get("id");
+        let item_rows = sqlx::query(
+            r#"
+            SELECT
+                id,
+                rank,
+                title,
+                company,
+                display_date,
+                summary,
+                source_name,
+                source_url,
+                rating,
+                category_label
+            FROM briefing_section_items
+            WHERE section_id = ?
+            ORDER BY rank ASC, id ASC
+            "#,
+        )
+        .bind(&section_id)
+        .fetch_all(state.db())
+        .await
+        .map_err(|error| AppError::internal(format!("failed to load briefing items: {error}")))?;
+
+        let items = item_rows
+            .into_iter()
+            .map(|row| BriefingSectionItemResponse {
+                id: row.get("id"),
+                rank: row.get("rank"),
+                title: row.get("title"),
+                company: row.get("company"),
+                date: row.get("display_date"),
+                summary: row.get("summary"),
+                source: row.get("source_name"),
+                source_url: row.get("source_url"),
+                stars: row.get("rating"),
+                category: row.get("category_label"),
+            })
+            .collect();
+
+        sections.push(BriefingSectionResponse {
+            title: section_row.get("title"),
+            emoji: section_row.get("emoji"),
+            items,
+        });
+    }
+
+    Ok(BriefingResponse {
+        id: briefing.get("id"),
+        briefing_date: briefing.get("briefing_date"),
+        date: briefing.get("display_date"),
+        analysis: BriefingAnalysisResponse {
+            trend: briefing.get("analysis_trend"),
+            competition: briefing.get("analysis_competition"),
+            demand: briefing.get("analysis_demand"),
+        },
+        sections,
     })
 }
