@@ -44,6 +44,10 @@ Phase 3: thin frontend/backend integration
 - Added a minimal frontend API adapter layer for current Rust response shapes, including safe fallback when briefing item `sourceUrl` is absent
 - Noted the backend/frontend session cookie-name alignment requirement in `.env.example` for later auth work
 - Verified the extracted frontend still type-checks and builds after the integration changes
+- Chose and implemented the smallest supported combined routing path: Vite dev proxy to the Rust backend locally, plus optional same-origin SPA static serving from the Rust backend in deployment
+- Added `FRONTEND_DIST_DIR` support to backend config and a minimal SPA fallback handler that serves the built frontend without introducing external reverse-proxy infrastructure
+- Added a frontend `.env.example` with local routing placeholders and documented the run flow in `docs/routing-and-runbook.md`
+- Verified the Rust backend routing changes with `cargo fmt --all` and `cargo check --offline`
 
 ## Confirmed facts established
 - The source archive contains a Vite + React + TypeScript frontend project.
@@ -66,12 +70,15 @@ Phase 3: thin frontend/backend integration
 - `GET /api/news` and `GET /api/briefings/latest` are already close enough to the extracted frontend sample-data shapes that frontend-first adapter work should be small
 - `POST /api/subscribe` is backend-ready but the extracted modal is still a simulated client-only flow
 - The extracted frontend constant `app_session_id` does not match the backend default cookie name `fomos_news_session`; this should be resolved via env config before frontend auth wiring
+- The narrowest evidence-based combined deployment path is Rust as the single deployed origin, serving `/api` directly and the built Vite SPA on non-`/api` routes when `FRONTEND_DIST_DIR` exists
+- The narrowest evidence-based local/dev path is Vite on `:5173` proxying `/api` to the Rust backend on `:3000`
 
 ## Next
 - Connect real upstream OAuth identity verification to replace the local bootstrap session path
-- Decide how the extracted frontend will reach the Rust backend in local/dev deployment, since the current frontend project does not proxy `/api` by itself
+- Install frontend tooling in the environment and run the extracted frontend validation (`pnpm check` and `pnpm build`) against the new dev proxy setup
 - Add explicit empty-state UX or retry controls only if product scope expands beyond the current minimal integration
 
 ## Blockers
 - No technical blocker for design
 - No unresolved blocker on briefing ownership; briefing is a separately ingested artifact from another OpenClaw instance
+- Frontend validation is currently blocked in this sandbox because `pnpm` is unavailable and dependencies are not installed under `extracted/repo/fomos-news/node_modules`

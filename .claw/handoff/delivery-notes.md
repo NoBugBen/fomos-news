@@ -14,9 +14,19 @@ Rust backend APIs for health, news, briefings, subscribe, and auth/session are i
 - No frontend wiring was added for markets, leaderboard, ecosystem, or auth/session flows.
 
 ## Remaining integration notes
-- The extracted frontend still assumes the browser can reach `/api` on the same origin. There is no new Vite proxy or Express bridge in this change set, so local/dev serving still needs an external reverse proxy, same-origin deployment, or a later frontend-server adaptation.
+- The repo now supports two documented, evidence-based routing modes in `docs/routing-and-runbook.md`: Vite dev on `:5173` proxying `/api` to the Rust backend on `:3000`, and same-origin deployment where the Rust backend serves the built SPA from `extracted/repo/fomos-news/dist/public`.
+- The Rust backend static serving path is intentionally minimal and env-driven through `FRONTEND_DIST_DIR`. If that directory is absent, backend behavior remains API-only and unmatched non-`/api` routes still return `404`.
 - Cookie-name alignment is still a later auth task. The extracted frontend shared constant remains `app_session_id`, while backend default env remains `fomos_news_session`; `.env.example` now notes that `SESSION_COOKIE_NAME` should be set to `app_session_id` before frontend auth/session wiring begins.
 - Real upstream OAuth identity verification is still not implemented. The backend callback remains a local bootstrap path after `code` and `state` validation.
+
+## Routing and deployment support delivered (2026-03-19)
+- Added frontend dev proxy support in `extracted/repo/fomos-news/vite.config.ts` so local browser requests to `/api` forward to `VITE_BACKEND_ORIGIN` instead of requiring a separate external proxy.
+- Moved the extracted frontend dev server default back to `:5173`, which matches the backend `FRONTEND_BASE_URL` default and avoids the previous port collision with the Rust backend default `APP_PORT=3000`.
+- Added optional backend SPA static serving for non-`/api` routes when `FRONTEND_DIST_DIR` points to a built frontend directory.
+- Added `extracted/repo/fomos-news/.env.example` for frontend-local env placeholders without inventing real OAuth or map-provider values.
+- Added `docs/routing-and-runbook.md` with the supported local/dev flow, same-origin deployment flow, and explicit non-goals.
+- Validation completed on the Rust side with `cargo fmt --all` and `cargo check --offline`.
+- Frontend validation could not be run here because `pnpm` is not installed and `extracted/repo/fomos-news/node_modules` is absent in this sandbox.
 
 ## Resume protocol
 1. Read `.claw/plans/implementation-plan.md`

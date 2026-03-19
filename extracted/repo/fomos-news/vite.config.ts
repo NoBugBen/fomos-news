@@ -151,6 +151,7 @@ function vitePluginManusDebugCollector(): Plugin {
 }
 
 const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+const backendOrigin = process.env.VITE_BACKEND_ORIGIN || "http://127.0.0.1:3000";
 
 export default defineConfig({
   plugins,
@@ -168,9 +169,15 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    port: 3000,
-    strictPort: false, // Will find next available port if 3000 is busy
+    port: 5173,
+    strictPort: false, // Will find the next available port if 5173 is busy
     host: true,
+    proxy: {
+      "/api": {
+        target: backendOrigin,
+        changeOrigin: true,
+      },
+    },
     allowedHosts: [
       ".manuspre.computer",
       ".manus.computer",

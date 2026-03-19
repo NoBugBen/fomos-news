@@ -5,9 +5,8 @@
 - Approve or revise the proposed v1 API contract
 - Approve or revise the proposed auth approach
 - Approve or revise the proposed dedupe strategy
-- Add deployment files and runbook
 - Align deployed `SESSION_COOKIE_NAME` with extracted frontend constant before wiring frontend auth/session flows
-- Decide local/dev routing or proxy arrangement so the extracted frontend can reach the Rust `/api` origin consistently
+- Validate the extracted frontend with installed tooling once `pnpm` and dependencies are available in the environment
 
 ## Doing
 - Connect real upstream OAuth identity verification for browser sessions
@@ -34,3 +33,6 @@
 - Frontend integration readiness audited against the implemented Rust backend, with exact gaps and smallest adaptation paths recorded in handoff docs
 - Extracted frontend wired to backend for homepage news, homepage latest briefing preview, briefing page latest briefing view, and subscribe modal submission
 - Markets, leaderboard, and ecosystem left untouched and still backed by static/mock data
+- Local/dev routing path chosen and implemented via Vite `/api` proxy to the Rust backend
+- Same-origin deployment/runbook added using Rust as the single origin with optional SPA static serving from `FRONTEND_DIST_DIR`
+- Backend and frontend env examples updated for the supported combined run path

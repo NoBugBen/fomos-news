@@ -1,4 +1,4 @@
-use std::{env, net::SocketAddr};
+use std::{env, net::SocketAddr, path::Path};
 
 use anyhow::{Context, Result};
 
@@ -13,6 +13,7 @@ pub struct AppConfig {
     pub ingest_bearer_token: Option<String>,
     pub oauth_portal_url: Option<String>,
     pub frontend_base_url: String,
+    pub frontend_dist_dir: Option<String>,
 }
 
 impl AppConfig {
@@ -27,12 +28,13 @@ impl AppConfig {
                 .unwrap_or_else(|_| "sqlite://data/fomos-news.db".to_string()),
             session_cookie_name: env::var("SESSION_COOKIE_NAME")
                 .unwrap_or_else(|_| "fomos_news_session".to_string()),
-            session_secret: env::var("SESSION_SECRET")
-                .unwrap_or_else(|_| "change-me".to_string()),
+            session_secret: env::var("SESSION_SECRET").unwrap_or_else(|_| "change-me".to_string()),
             ingest_bearer_token: optional_env("INGEST_BEARER_TOKEN"),
             oauth_portal_url: optional_env("OAUTH_PORTAL_URL"),
             frontend_base_url: env::var("FRONTEND_BASE_URL")
                 .unwrap_or_else(|_| "http://localhost:5173".to_string()),
+            frontend_dist_dir: optional_env("FRONTEND_DIST_DIR")
+                .or_else(detect_default_frontend_dist_dir),
         })
     }
 
@@ -64,4 +66,11 @@ fn optional_env(key: &str) -> Option<String> {
             Some(trimmed)
         }
     })
+}
+
+fn detect_default_frontend_dist_dir() -> Option<String> {
+    let default_path = Path::new("extracted/repo/fomos-news/dist/public");
+    default_path
+        .is_dir()
+        .then(|| default_path.display().to_string())
 }

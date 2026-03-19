@@ -31,6 +31,12 @@ async fn main() -> anyhow::Result<()> {
         .with_context(|| format!("failed to bind HTTP listener on {address}"))?;
 
     info!(%address, "starting fomos-news-api");
+    if let Some(frontend_dist_dir) = &state.config().frontend_dist_dir {
+        info!(
+            frontend_dist_dir,
+            "serving frontend static assets from configured dist directory"
+        );
+    }
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
