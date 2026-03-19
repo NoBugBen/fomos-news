@@ -22,6 +22,10 @@ Phase 2: backend scaffold
 - Added a working `GET /api/healthz` endpoint
 - Added placeholder route modules for auth, news, briefings, and subscribe
 - Added lazy SQLite pool bootstrap placeholder without schema or migrations
+- Added SQLx file-based migration setup under `migrations/`
+- Implemented initial SQLite v1 schema for news, briefing, subscribers, and admin sessions
+- Wired startup to open SQLite eagerly, enable foreign keys, create the DB file if missing, and run migrations on boot
+- Verified the backend still compiles after schema bootstrap changes
 
 ## Confirmed facts established
 - The source archive contains a Vite + React + TypeScript frontend project.
@@ -42,7 +46,6 @@ Phase 2: backend scaffold
 - v1 backend scope excludes markets, leaderboard, and ecosystem APIs until a later approved phase
 
 ## Next
-- Implement SQLite schema and migrations
 - Replace placeholder handlers with real auth, ingest, read, and subscribe logic
 - Connect frontend to backend in a later implementation phase
 

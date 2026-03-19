@@ -11,19 +11,16 @@ use anyhow::Context;
 use tokio::net::TcpListener;
 use tracing::info;
 
-use crate::{
-    app::build_app,
-    config::AppConfig,
-    db::create_sqlite_pool,
-    state::AppState,
-};
+use crate::{app::build_app, config::AppConfig, db::create_sqlite_pool, state::AppState};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     init_tracing();
 
     let config = AppConfig::from_env().context("failed to load application config")?;
-    let db = create_sqlite_pool(&config).context("failed to create SQLite pool")?;
+    let db = create_sqlite_pool(&config)
+        .await
+        .context("failed to create SQLite pool")?;
     let state = AppState::new(config, db);
     let app = build_app(state.clone());
 
