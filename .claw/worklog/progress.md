@@ -1,7 +1,7 @@
 # Progress Log
 
 ## Current stage
-Phase 3: thin frontend/backend integration
+Phase 4: delivery consolidation and handoff
 
 ## Completed
 - Confirmed project directory exists
@@ -51,6 +51,8 @@ Phase 3: thin frontend/backend integration
 - Installed extracted frontend dependencies with `corepack pnpm install --frozen-lockfile` in the current environment
 - Fixed a real TypeScript adapter mismatch in `client/src/lib/api.ts` by normalizing backend news categories into the frontend `NewsItem` union type
 - Verified the extracted frontend with `corepack pnpm check` and `corepack pnpm build`; production build completed successfully, with warnings only for unresolved optional analytics env placeholders and large bundle size
+- Consolidated delivery/handoff docs to reflect the validated implementation state, current deliverable scope, and explicit deferred items
+- Added a root-level delivery README pointing to the supported run paths and handoff documents
 
 ## Confirmed facts established
 - The source archive contains a Vite + React + TypeScript frontend project.
@@ -71,17 +73,19 @@ Phase 3: thin frontend/backend integration
 - v1 backend scope excludes markets, leaderboard, and ecosystem APIs until a later approved phase
 - Current OAuth callback handling still does not verify upstream identity against the provider; it now creates a local bootstrap `editor` session only after `code` and `state` validation so the browser flow remains controlled and compile-safe without inventing unsupported provider calls
 - `GET /api/news` and `GET /api/briefings/latest` are already close enough to the extracted frontend sample-data shapes that frontend-first adapter work should be small
-- `POST /api/subscribe` is backend-ready but the extracted modal is still a simulated client-only flow
+- `POST /api/subscribe` is now wired into the extracted modal, while auth/session UI remains intentionally unwired
 - The extracted frontend constant `app_session_id` does not match the backend default cookie name `fomos_news_session`; this should be resolved via env config before frontend auth wiring
 - The narrowest evidence-based combined deployment path is Rust as the single deployed origin, serving `/api` directly and the built Vite SPA on non-`/api` routes when `FRONTEND_DIST_DIR` exists
 - The narrowest evidence-based local/dev path is Vite on `:5173` proxying `/api` to the Rust backend on `:3000`
+- Current delivery should be represented as a validated v1 for implemented scope, not as a complete production rollout for auth or infrastructure
 
 ## Next
-- Connect real upstream OAuth identity verification to replace the local bootstrap session path
-- Install frontend tooling in the environment and run the extracted frontend validation (`pnpm check` and `pnpm build`) against the new dev proxy setup
-- Add explicit empty-state UX or retry controls only if product scope expands beyond the current minimal integration
+- Hand off the repo in its current validated state using the root `README.md`, `docs/routing-and-runbook.md`, and `.claw/handoff/delivery-notes.md`
+- Connect real upstream OAuth identity verification only when the provider contract and approved flow details are supplied
+- Align `SESSION_COOKIE_NAME` with `app_session_id` when frontend auth/session wiring becomes active
+- Decide later whether to spend scope on frontend bundle-size optimization
 
 ## Blockers
-- No technical blocker for design
+- No current technical blocker for delivery of the implemented scope
 - No unresolved blocker on briefing ownership; briefing is a separately ingested artifact from another OpenClaw instance
-- Frontend validation is currently blocked in this sandbox because `pnpm` is unavailable and dependencies are not installed under `extracted/repo/fomos-news/node_modules`
+- Deferred items remain product/integration follow-ups rather than blockers for the current handoff
