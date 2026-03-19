@@ -1,8 +1,8 @@
 # API Design
 
 ## Document status
-- Phase: backend design only
-- Implementation status: not started
+- Phase: backend design approved for scaffolding
+- Implementation status: Rust backend scaffolded, business logic not implemented
 - Intent: define a concrete Rust + SQLite v1 API based on confirmed frontend and project constraints
 
 ## Confirmed facts

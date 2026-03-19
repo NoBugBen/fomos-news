@@ -5,7 +5,6 @@
 - Approve or revise the proposed v1 API contract
 - Approve or revise the proposed auth approach
 - Approve or revise the proposed dedupe strategy
-- Scaffold Rust backend
 - Implement SQLite schema and migrations
 - Implement authenticated ingest API
 - Implement public read APIs for news and briefing
@@ -14,7 +13,7 @@
 - Add deployment files and runbook
 
 ## Doing
-- Design review and decision confirmation
+- Implementation phase kickoff for Rust backend
 
 ## Done
 - Project directory confirmed
@@ -28,3 +27,4 @@
 - Exact frontend integration points verified from source
 - v1 backend design documented
 - Backend stack ADR finalized for Rust + SQLite v1
+- Rust backend scaffolded in repo root with config/state/router bootstrap

@@ -1,7 +1,7 @@
 # Progress Log
 
 ## Current stage
-Phase 1: backend design
+Phase 2: backend scaffold
 
 ## Completed
 - Confirmed project directory exists
@@ -17,6 +17,11 @@ Phase 1: backend design
 - Replaced placeholder API doc with concrete Rust + SQLite v1 backend design
 - Recorded auth, dedupe, endpoint scope, and frontend integration notes for v1
 - Confirmed briefing ownership: another OpenClaw writes briefing content separately
+- Scaffolded Rust backend manifest and source layout in the repo root
+- Added env-based config loading and shared application state
+- Added a working `GET /api/healthz` endpoint
+- Added placeholder route modules for auth, news, briefings, and subscribe
+- Added lazy SQLite pool bootstrap placeholder without schema or migrations
 
 ## Confirmed facts established
 - The source archive contains a Vite + React + TypeScript frontend project.
@@ -37,9 +42,9 @@ Phase 1: backend design
 - v1 backend scope excludes markets, leaderboard, and ecosystem APIs until a later approved phase
 
 ## Next
-- Get design approval or adjustments from the user
-- Begin backend scaffolding only after approval
-- Translate API and data model decisions into migrations, handlers, and frontend wiring in a later implementation phase
+- Implement SQLite schema and migrations
+- Replace placeholder handlers with real auth, ingest, read, and subscribe logic
+- Connect frontend to backend in a later implementation phase
 
 ## Blockers
 - No technical blocker for design
