@@ -5,12 +5,11 @@
 - Approve or revise the proposed v1 API contract
 - Approve or revise the proposed auth approach
 - Approve or revise the proposed dedupe strategy
-- Implement subscribe API
 - Connect frontend to backend
 - Add deployment files and runbook
 
 ## Doing
-- Subscribe and browser-session auth implementation
+- Browser-session auth implementation
 
 ## Done
 - Project directory confirmed
@@ -28,3 +27,4 @@
 - SQLite schema and migrations implemented for the confirmed v1 backend design
 - Authenticated ingest API implemented for news and briefings
 - Public read APIs implemented for `/api/news`, `/api/news/:id`, `/api/briefings/latest`, `/api/briefings`, and `/api/briefings/:date`
+- Subscribe API implemented for `POST /api/subscribe` with normalized email persistence and idempotent active-subscription behavior

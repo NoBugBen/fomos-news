@@ -32,6 +32,7 @@ Phase 2: backend scaffold
 - Implemented SQLite-backed public read APIs for news list/detail and briefing latest/archive/by-date
 - Added news cursor pagination, category/hot filters, and tag loading on read responses
 - Exposed briefing archive metadata plus fully hydrated persisted briefing sections/items for latest and by-date reads
+- Implemented `POST /api/subscribe` with conservative email validation, normalization, idempotent active-subscription handling, and SQLite persistence
 - Kept browser-session auth endpoints scaffolded without rewiring frontend auth flows
 
 ## Confirmed facts established
@@ -53,7 +54,7 @@ Phase 2: backend scaffold
 - v1 backend scope excludes markets, leaderboard, and ecosystem APIs until a later approved phase
 
 ## Next
-- Implement subscribe workflow and session-backed browser auth flows
+- Implement session-backed browser auth flows
 - Connect frontend to backend in a later implementation phase
 
 ## Blockers
