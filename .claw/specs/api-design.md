@@ -2,7 +2,7 @@
 
 ## Document status
 - Phase: backend design approved for scaffolding
-- Implementation status: Rust backend scaffolded, business logic not implemented
+- Implementation status: Rust backend APIs for news, briefings, subscribe, auth/session, and health are implemented; frontend wiring is still pending
 - Intent: define a concrete Rust + SQLite v1 API based on confirmed frontend and project constraints
 
 ## Confirmed facts
@@ -15,6 +15,22 @@
 - SQLite is accepted for v1.
 - Duplicate news is not allowed; upstream OpenClaw is the primary dedupe layer and the backend should still add basic filtering.
 - `client/src/const.ts` constructs an OAuth redirect URL to `/api/oauth/callback`.
+- The Rust app mounts all handlers under `/api`, which matches the extracted frontend path assumptions.
+
+## Integration-readiness addendum (2026-03-19)
+
+### Confirmed contract matches
+- `GET /api/news` is already close to the homepage sample shape. The implemented response uses camelCase JSON and includes `sourceUrl`, `date`, and `isHot`, which align with the extracted `NewsItem` client shape.
+- `GET /api/briefings/latest` is already close to the briefing-page sample shape. The implemented response uses camelCase JSON and includes `date`, `analysis`, `sections`, and section items with `id`, `rank`, `title`, `company`, `date`, `summary`, `source`, `stars`, `category`, plus optional `sourceUrl`.
+- `POST /api/subscribe` is sufficient for the subscribe modal once the frontend stops simulating success locally.
+- `GET /api/auth/session`, `POST /api/auth/logout`, and `GET /api/oauth/callback` exist for the future frontend auth/session wiring.
+
+### Confirmed mismatches or readiness gaps
+- The extracted frontend is not wired to these APIs yet; homepage, briefing page, and subscribe modal still consume `client/src/lib/sampleData.ts` or local UI state.
+- Earlier draft examples in this spec used `published_at` and `display_date` fields for news. The implemented news read API instead returns a single frontend-facing `date` field.
+- The frontend shared cookie constant is `app_session_id`, while backend config defaults `SESSION_COOKIE_NAME` to `fomos_news_session`. This is a deployment/config mismatch to resolve before frontend session logic is added.
+- The extracted frontend has no current consumer for `GET /api/auth/session` or `POST /api/auth/logout`; the auth gap is in frontend integration, not missing backend endpoints.
+- Upstream OAuth identity verification remains intentionally unspecified and is not implemented here. Do not treat the current callback bootstrap behavior as production OAuth.
 
 ## Proposed v1 scope
 

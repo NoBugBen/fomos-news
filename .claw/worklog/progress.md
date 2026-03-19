@@ -35,6 +35,8 @@ Phase 2: backend scaffold
 - Implemented `POST /api/subscribe` with conservative email validation, normalization, idempotent active-subscription handling, and SQLite persistence
 - Implemented SQLite-backed browser session endpoints for `GET /api/auth/session`, `POST /api/auth/logout`, and `GET /api/oauth/callback`
 - Kept browser-session auth endpoints scaffolded without rewiring frontend auth flows
+- Audited extracted frontend integration readiness against implemented Rust APIs for news, briefings, subscribe, and auth/session touchpoints
+- Recorded exact contract matches, remaining frontend wiring gaps, cookie-name mismatch, and smallest adaptation paths in the handoff docs
 
 ## Confirmed facts established
 - The source archive contains a Vite + React + TypeScript frontend project.
@@ -54,10 +56,13 @@ Phase 2: backend scaffold
 - Dedupe model: deterministic normalized `dedupe_key` plus content hash safeguard
 - v1 backend scope excludes markets, leaderboard, and ecosystem APIs until a later approved phase
 - Current OAuth callback handling still does not verify upstream identity against the provider; it now creates a local bootstrap `editor` session only after `code` and `state` validation so the browser flow remains controlled and compile-safe without inventing unsupported provider calls
+- `GET /api/news` and `GET /api/briefings/latest` are already close enough to the extracted frontend sample-data shapes that frontend-first adapter work should be small
+- `POST /api/subscribe` is backend-ready but the extracted modal is still a simulated client-only flow
+- The extracted frontend constant `app_session_id` does not match the backend default cookie name `fomos_news_session`; this should be resolved via env config before frontend auth wiring
 
 ## Next
 - Connect real upstream OAuth identity verification to replace the local bootstrap session path
-- Connect frontend to backend in a later implementation phase
+- Connect frontend to backend in a later implementation phase, starting with homepage news, briefing latest, and subscribe modal wiring
 
 ## Blockers
 - No technical blocker for design
