@@ -1,7 +1,6 @@
 use axum::{
     extract::{Query, State},
     http::StatusCode,
-    response::IntoResponse,
     routing::{get, post},
     Json, Router,
 };
@@ -51,7 +50,7 @@ async fn logout() -> StatusCode {
 async fn oauth_callback(
     State(state): State<AppState>,
     Query(query): Query<OAuthCallbackQuery>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<StatusCode, AppError> {
     let _ = state.config();
 
     if query.code.is_none() || query.state.is_none() {
